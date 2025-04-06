@@ -4,11 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CurrencyExchangeAPI
 {
-    // Klasa reprezentująca odpowiedź z API kursów walut, zawierająca:
-    // - kod waluty bazowej (base_code)
-    // - słownik kursów wymiany (rates) w postaci [kod waluty: wartość kursu]
-    // - timestamp ostatniej aktualizacji (time_last_update_unix)
-    // - metodę formatującą timestamp na czytelną datę (GetFormattedUpdateTime)
+
     public class ExchangeRatesApiResponse
     {
         public string base_code { get; set; }
@@ -21,13 +17,6 @@ namespace CurrencyExchangeAPI
         }
     }
 
-    // Klasa reprezentująca kurs wymiany walut w bazie danych, zawierająca:
-    // - Id (klucz główny)
-    // - Parę walut (BaseCurrency -> TargetCurrency)
-    // - Wartość kursu wymiany (Rate)
-    // - Datę ostatniej aktualizacji (UpdatedAt)
-    // - Relację do encji Currency przez CurrencyId
-    // - Metodę ToString() zwracającą sformatowany opis kursu
     public class ExchangeRate
     {
         [Key]
@@ -47,12 +36,6 @@ namespace CurrencyExchangeAPI
         }
     }
 
-    // Klasa modelująca encję waluty z właściwościami:
-    // - Id (klucz główny)
-    // - Code (3-literowy kod waluty, wymagane pole)
-    // - Name (pełna nazwa waluty)
-    // - Kolekcją powiązanych kursów wymiany (ExchangeRates)
-    // - Metodą ToString() zwracającą sformatowaną nazwę waluty
     public class Currency
     {
         [Key]
@@ -69,12 +52,6 @@ namespace CurrencyExchangeAPI
         }
     }
 
-    // Klasa bazy danych Entity Framework Core, która:
-    // - Definiuje DbSet dla encji Currency i ExchangeRate
-    // - Automatycznie tworzy bazę danych (Database.EnsureCreated)
-    // - Konfiguruje połączenie z bazą SQLite (Data Source=CurrencyExchange.db)
-    // - Definiuje relację między Currency a ExchangeRate (jeden-do-wielu)
-    // - Zawiera dane inicjalizacyjne dla podstawowych walut
     internal class CurrencyDbContext : DbContext
     {
         public DbSet<Currency> Currencies { get; set; }
@@ -108,16 +85,12 @@ namespace CurrencyExchangeAPI
         }
     }
 
-    // Główna klasa serwisowa odpowiedzialna za:
-    // - Pobieranie danych z zewnętrznego API kursów walut
-    // - Zarządzanie danymi w lokalnej bazie danych
-    // - Udostępnianie metod do wyświetlania i analizy kursów
     public class CurrencyAPIHandler
     {
         private readonly HttpClient client;
         private readonly CurrencyDbContext dbContext;
         private const string BASE_URL = "https://open.er-api.com/v6/latest/";
-        private const double RATE_EPSILON = 0.00001; // Dopuszczalna różnica kursów
+        private const double RATE_EPSILON = 0.00001; 
 
         public CurrencyAPIHandler()
         {
@@ -125,8 +98,6 @@ namespace CurrencyExchangeAPI
             dbContext = new CurrencyDbContext();
         }
 
-        // Sprawdza czy aktualne kursy dla danej waluty bazowej istnieją w bazie
-        // i czy są nie starsze niż 1 godzina
         private bool RatesExistInDatabase(string baseCurrency)
         {
             var latestRate = dbContext.ExchangeRates
@@ -146,10 +117,6 @@ namespace CurrencyExchangeAPI
             return false;
         }
 
-        // Pobiera kursy wymiany dla waluty bazowej:
-        // - Najpierw sprawdza czy aktualne dane są w lokalnej bazie
-        // - Jeśli nie, pobiera z API i zapisuje do bazy
-        // - Zwraca listę kursów wymiany
         public async Task<List<ExchangeRate>> GetExchangeRatesAsync(string baseCurrency = "PLN")
         {
             if (RatesExistInDatabase(baseCurrency))
@@ -183,13 +150,7 @@ namespace CurrencyExchangeAPI
             }
 
             return new List<ExchangeRate>();
-        }
 
-        // Zapisuje kursy wymiany do bazy danych, wykonując:
-        // - Porównanie z istniejącymi kursami
-        // - Dodanie nowych kursów
-        // - Aktualizację zmienionych kursów
-        // - Dodanie nowych walut jeśli nie istnieją
         private async Task SaveRatesToDatabaseAsync(ExchangeRatesApiResponse apiResponse, DateTime updateTime)
         {
             try
@@ -259,8 +220,6 @@ namespace CurrencyExchangeAPI
             }
         }
 
-        // Wyświetla aktualne kursy wymiany dla podanej waluty bazowej
-        // w formacie tabelarycznym, pokazując tylko główne waluty
         public async Task DisplayRates(string baseCurrency = "PLN")
         {
             var rates = await GetExchangeRatesAsync(baseCurrency);
@@ -281,7 +240,6 @@ namespace CurrencyExchangeAPI
             }
         }
 
-        // Wyświetla porównanie kursów wybranych walut względem waluty bazowej
         public async Task CompareSelectedCurrencies(string baseCurrency, string[] targetCurrencies)
         {
             var rates = await GetExchangeRatesAsync(baseCurrency);
@@ -303,7 +261,6 @@ namespace CurrencyExchangeAPI
             }
         }
 
-        // Filtruje i wyświetla kursy wyższe niż podana wartość minimalna
         public async Task FilterRatesByValueAsync(string baseCurrency, double minRate)
         {
             await GetExchangeRatesAsync(baseCurrency);
@@ -320,7 +277,6 @@ namespace CurrencyExchangeAPI
             }
         }
 
-        // Wyświetla listę wszystkich walut w bazie danych w formacie tabelarycznym
         public void DisplayAllCurrencies()
         {
             Console.WriteLine("\n=== Lista walut w bazie ===");
@@ -332,7 +288,6 @@ namespace CurrencyExchangeAPI
             }
         }
 
-        // Wyświetla listę wszystkich kursów w bazie danych w formacie tabelarycznym
         public void DisplayAllExchangeRates()
         {
             Console.WriteLine("\n=== Lista kursów w bazie ===");
@@ -345,7 +300,6 @@ namespace CurrencyExchangeAPI
         }
     }
 
-    // Główna klasa programu z punktem wejścia aplikacji
     internal class Program
     {
         static async Task Main(string[] args)
@@ -357,17 +311,10 @@ namespace CurrencyExchangeAPI
 
             try
             {
-                // 1. Wyświetlenie aktualnych kursów PLN
                 await currencyHandler.DisplayRates("PLN");
-
-                // 2. Porównanie wybranych walut
                 await currencyHandler.CompareSelectedCurrencies("PLN",
                     new[] { "USD", "EUR", "GBP", "JPY", "CHF" });
-
-                // 3. Filtrowanie kursów
                 await currencyHandler.FilterRatesByValueAsync("PLN", 0.2);
-
-                // 4. Wyświetlanie zawartości bazy danych
                 Console.WriteLine("\n=== Podsumowanie bazy danych ===");
                 currencyHandler.DisplayAllCurrencies();
                 currencyHandler.DisplayAllExchangeRates();
